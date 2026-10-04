@@ -1,0 +1,43 @@
+name: 24/7 Live Stream - in.mellow
+
+on:
+  workflow_dispatch:
+  repository_dispatch:
+    types: [trigger_inmellow]
+  schedule:
+    - cron: '0 */5 * * *'
+
+concurrency:
+  group: stream_inmellow
+  cancel-in-progress: false
+
+jobs:
+  stream:
+    runs-on: ubuntu-latest
+    timeout-minutes: 360
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install FFmpeg
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y ffmpeg
+
+      - name: Run 24/7 Live Stream Engine
+        env:
+          STREAM_KEY: ${{ secrets.STREAM_KEY_INMELLOW }}
+          GH_PAT_TOKEN: ${{ secrets.GH_PAT_TOKEN || secrets.GITHUB_TOKEN }}
+        run: |
+          python scripts/stream_engine.py \
+            --stream-key "$STREAM_KEY" \
+            --video "media/cover_inmellow.jpg" \
+            --audio "media/audio_inmellow.m4a" \
+            --duration 320 \
+            --workflow-file "live_inmellow.yml"
