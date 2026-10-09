@@ -30,14 +30,34 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y ffmpeg
 
+      - name: Fetch Master Videos from Google Drive
+        env:
+          GDRIVE_CLIENT_ID: ${{ secrets.GDRIVE_CLIENT_ID }}
+          GDRIVE_CLIENT_SECRET: ${{ secrets.GDRIVE_CLIENT_SECRET }}
+          GDRIVE_REFRESH_TOKEN: ${{ secrets.GDRIVE_REFRESH_TOKEN }}
+        run: |
+          python scripts/fetch_drive_stream_media.py \
+            --folder-id "1K2tNIYj418UvkCllIKAJCmhPVmMDC_Be" \
+            --output-dir "media_live" || true
+
       - name: Run 24/7 Live Stream Engine
         env:
           STREAM_KEY: ${{ secrets.STREAM_KEY_INDRIP }}
           GH_PAT_TOKEN: ${{ secrets.GH_PAT_TOKEN || secrets.GITHUB_TOKEN }}
         run: |
+          VIDEO_SOURCE="media/cover_indrip.jpg"
+          AUDIO_SOURCE="media/audio_indrip.m4a"
+          if [ -f "media_live/stream_video.mp4" ]; then
+            VIDEO_SOURCE="media_live/stream_video.mp4"
+            AUDIO_SOURCE=""
+            echo "🎬 Using Full HD Master Album Video from Google Drive!"
+          else
+            echo "⚠️ Using fallback Cover Image + Audio"
+          fi
+
           python scripts/stream_engine.py \
             --stream-key "$STREAM_KEY" \
-            --video "media/cover_indrip.jpg" \
-            --audio "media/audio_indrip.m4a" \
+            --video "$VIDEO_SOURCE" \
+            ${AUDIO_SOURCE:+--audio "$AUDIO_SOURCE"} \
             --duration 320 \
             --workflow-file "live_indrip.yml"
