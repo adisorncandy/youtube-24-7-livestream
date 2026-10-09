@@ -199,6 +199,8 @@ def sync_channel(channel_name, limit=5, target_video_id=None):
         # Fast direct download via yt-dlp on cloud
         cmd = [
             'yt-dlp',
+            '--extractor-args', 'youtube:player_client=android,ios,web',
+            '--js-runtimes', 'node',
             '-f', 'bv*[ext=mp4]+ba*[ext=m4a]/b[ext=mp4]/best',
             '--merge-output-format', 'mp4',
             '--no-playlist',
