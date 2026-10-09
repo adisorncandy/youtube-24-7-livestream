@@ -1,0 +1,61 @@
+name: Cloud Sync YouTube to Google Drive
+
+on:
+  workflow_dispatch:
+    inputs:
+      channel:
+        description: 'Target channel to sync'
+        required: true
+        default: 'in.drip'
+        type: choice
+        options:
+          - 'in.drip'
+          - 'in.mellow'
+          - 'in.natural'
+          - 'in.tween'
+          - 'in.flow'
+          - 'all'
+      limit:
+        description: 'Number of videos to transfer'
+        required: true
+        default: '5'
+      video_id:
+        description: 'Specific YouTube Video ID (leave blank for next in queue)'
+        required: false
+        default: ''
+
+jobs:
+  sync_to_drive:
+    runs-on: ubuntu-latest
+    timeout-minutes: 300
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install Dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y ffmpeg
+          python -m pip install --upgrade pip
+          pip install yt-dlp
+
+      - name: Execute Cloud Transfer to Google Drive
+        env:
+          GDRIVE_CLIENT_ID: ${{ secrets.GDRIVE_CLIENT_ID }}
+          GDRIVE_CLIENT_SECRET: ${{ secrets.GDRIVE_CLIENT_SECRET }}
+          GDRIVE_REFRESH_TOKEN: ${{ secrets.GDRIVE_REFRESH_TOKEN }}
+        run: |
+          EXTRA_ARGS=""
+          if [ -n "${{ inputs.video_id }}" ]; then
+            EXTRA_ARGS="--video-id ${{ inputs.video_id }}"
+          fi
+          python scripts/cloud_sync_to_drive.py \
+            --channel "${{ inputs.channel }}" \
+            --limit "${{ inputs.limit }}" \
+            $EXTRA_ARGS
